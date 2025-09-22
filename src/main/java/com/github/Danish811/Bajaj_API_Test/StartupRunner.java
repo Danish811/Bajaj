@@ -25,7 +25,7 @@ public class StartupRunner implements CommandLineRunner {
     @Override
     public void run(String... args) {
         try {
-            // Step 1: Generate webhook
+
             String generateUrl = "https://bfhldevapigw.healthrx.co.in/hiring/generateWebhook/JAVA";
             Map<String, String> generateRequest = Map.of(
                     "name", name,
@@ -75,7 +75,6 @@ public class StartupRunner implements CommandLineRunner {
 
         String finalQuery;
         if (lastTwo % 2 == 1) {
-            // Question 1: Highest salary not on 1st of month
             finalQuery =
                     "SELECT p.AMOUNT AS SALARY, " +
                             "CONCAT(e.FIRST_NAME, ' ', e.LAST_NAME) AS NAME, " +
@@ -87,7 +86,6 @@ public class StartupRunner implements CommandLineRunner {
                             "WHERE DAY(p.PAYMENT_TIME) != 1 " +
                             "ORDER BY p.AMOUNT DESC LIMIT 1;";
         } else {
-            // Question 2: (example query, replace with actual from PDF if different)
             finalQuery =
                     "SELECT d.DEPARTMENT_NAME, COUNT(e.EMP_ID) AS TOTAL_EMPLOYEES " +
                             "FROM DEPARTMENT d " +
