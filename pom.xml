@@ -6,34 +6,34 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.10</version>
-        <relativePath/> <!-- lookup parent from the repository -->
+        <version>3.4.0</version>
+        <relativePath/>
     </parent>
 
     <groupId>com.github.Danish811</groupId>
-    <artifactId>Bajaj-API-Test</artifactId>
+    <artifactId>bajaj-api-test</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>Bajaj-API-Test</name>
-    <description>Demo Spring Boot API Test project</description>
+    <name>bajaj-api-test</name>
+    <description>Spring Boot API Test project for Bajaj Qualifier</description>
 
     <properties>
-        <java.version>17</java.version> <!-- Use 17 or higher -->
+        <java.version>17</java.version>
     </properties>
 
     <dependencies>
-        <!-- Spring Web (for REST APIs) -->
+        <!-- Spring Boot Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- Jackson Databind (JSON processing) -->
+        <!-- JSON processing -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
-        <!-- Testing (JUnit, Spring Boot Test) -->
+        <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -43,10 +43,12 @@
 
     <build>
         <plugins>
-            <!-- Spring Boot Maven Plugin -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.github.Danish811.Bajaj_API_Test.BajajApiTestApplication</mainClass>
+                </configuration>
             </plugin>
         </plugins>
     </build>
