@@ -1,47 +1,77 @@
 package com.github.Danish811.Bajaj_API_Test;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.util.Map;
 @Component
 public class StartupRunner implements CommandLineRunner {
 
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    @Value("${app.name}")
+    private String name;
+
+    @Value("${app.regNo}")
+    private String regNo;
+
+    @Value("${app.email}")
+    private String email;
+
     @Override
-    public void run(String... args) throws Exception {
-        // 🔹 Your personal details
-        String name = "Mohammad Danish Sheikh";
-        String regNo = "0101CS221081";   // Odd → Question 1
-        String email = "sheikhd811@gmail.com";
+    public void run(String... args) {
+        try {
+            // Step 1: Generate webhook
+            String generateUrl = "https://bfhldevapigw.healthrx.co.in/hiring/generateWebhook/JAVA";
+            Map<String, String> generateRequest = Map.of(
+                    "name", name,
+                    "regNo", regNo,
+                    "email", email
+            );
 
-        RestTemplate restTemplate = new RestTemplate();
-        ObjectMapper mapper = new ObjectMapper();
+            ResponseEntity<Map> generateResponse = restTemplate.postForEntity(generateUrl, generateRequest, Map.class);
 
-        // 🔹 Step 1: Generate webhook
-        String generateUrl = "https://bfhldevapigw.healthrx.co.in/hiring/generateWebhook/JAVA";
+            String webhookUrl = (String) generateResponse.getBody().get("webhook");
+            String accessToken = (String) generateResponse.getBody().get("accessToken");
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
+            System.out.println("Webhook URL: " + webhookUrl);
+            System.out.println("Access Token: " + accessToken);
 
-        String requestBody = String.format(
-                "{\"name\":\"%s\",\"regNo\":\"%s\",\"email\":\"%s\"}", name, regNo, email);
+            if (webhookUrl == null || accessToken == null) {
+                System.err.println("Failed to get webhook URL or access token.");
+                return;
+            }
+            String finalQuery = getFinalQuery(regNo);
 
-        HttpEntity<String> requestEntity = new HttpEntity<>(requestBody, headers);
-        ResponseEntity<String> response = restTemplate.postForEntity(generateUrl, requestEntity, String.class);
 
-        JsonNode root = mapper.readTree(response.getBody());
-        String webhookUrl = root.path("webhook").asText();
-        String accessToken = root.path("accessToken").asText();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Authorization", accessToken); // <-- raw token, NO 'Bearer'
 
-        System.out.println("Webhook URL: " + webhookUrl);
-        System.out.println("Access Token: " + accessToken);
+            Map<String, String> answer = Map.of("finalQuery", finalQuery);
+            HttpEntity<Map<String, String>> entity = new HttpEntity<>(answer, headers);
 
-        // 🔹 Step 2: Pick SQL query based on regNo last 2 digits
-        String lastTwoStr = regNo.substring(regNo.length() - 2);
-        int lastTwo = Integer.parseInt(lastTwoStr);
+            ResponseEntity<String> submitResponse = restTemplate.postForEntity(webhookUrl, entity, String.class);
+            System.out.println("Submission response: " + submitResponse.getBody());
+
+        } catch (HttpClientErrorException.Unauthorized ex) {
+            System.err.println("Error 401: Unauthorized. Check your access token or webhook URL.");
+        } catch (HttpClientErrorException.BadRequest ex) {
+            System.err.println("Error 400: Bad Request. Check your payload format.");
+            System.err.println("Response body: " + ex.getResponseBodyAsString());
+        } catch (HttpClientErrorException ex) {
+            System.err.println("HTTP Error: " + ex.getStatusCode() + " - " + ex.getResponseBodyAsString());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private String getFinalQuery(String regNo) {
+        int lastTwo = Integer.parseInt(regNo.substring(regNo.length() - 2));
 
         String finalQuery;
         if (lastTwo % 2 == 1) {
@@ -57,7 +87,7 @@ public class StartupRunner implements CommandLineRunner {
                             "WHERE DAY(p.PAYMENT_TIME) != 1 " +
                             "ORDER BY p.AMOUNT DESC LIMIT 1;";
         } else {
-            // Question 2: Replace with actual SQL from Google Drive link
+            // Question 2: (example query, replace with actual from PDF if different)
             finalQuery =
                     "SELECT d.DEPARTMENT_NAME, COUNT(e.EMP_ID) AS TOTAL_EMPLOYEES " +
                             "FROM DEPARTMENT d " +
@@ -65,18 +95,6 @@ public class StartupRunner implements CommandLineRunner {
                             "GROUP BY d.DEPARTMENT_NAME " +
                             "HAVING COUNT(e.EMP_ID) > 5;";
         }
-
-        // 🔹 Step 3: Submit solution
-        HttpHeaders submitHeaders = new HttpHeaders();
-        submitHeaders.setContentType(MediaType.APPLICATION_JSON);
-        submitHeaders.setBearerAuth(accessToken);
-
-        String submitBody = String.format("{\"finalQuery\":\"%s\"}", finalQuery.replace("\"", "\\\""));
-        HttpEntity<String> submitEntity = new HttpEntity<>(submitBody, submitHeaders);
-
-        ResponseEntity<String> submitResponse = restTemplate.postForEntity(webhookUrl, submitEntity, String.class);
-
-        System.out.println("Submission Status: " + submitResponse.getStatusCode());
-        System.out.println("Response: " + submitResponse.getBody());
+        return finalQuery;
     }
 }
